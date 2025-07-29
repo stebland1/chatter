@@ -17,4 +17,4 @@ $(OBJ_DIR)/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(BIN_DIR)
+	rm -rf $(BIN_DIR)
