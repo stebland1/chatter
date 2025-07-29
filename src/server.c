@@ -1,3 +1,4 @@
+#include "server.h"
 #include <errno.h>
 #include <netdb.h>
 #include <stdio.h>
@@ -6,9 +7,6 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#define MAX_MSG_LEN 512
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 void close_all_fds(int maxfds, fd_set *fds) {
   for (int i = 0; i <= maxfds; i++) {
@@ -61,6 +59,19 @@ int get_listener_socket(const char *hostname, const char *port) {
 
   freeaddrinfo(servinfo);
   return -1;
+}
+
+void send_message(int listenerfd, char *msg, int from, int maxfd, fd_set *fds) {
+  // TODO: Apparently send buffers messages
+  // So we could end up with bytes still to send.
+  for (int i = 0; i <= maxfd; i++) {
+    if (FD_ISSET(i, fds) && i != from && i != listenerfd) {
+      int bytes_sent = send(i, msg, strlen(msg), 0);
+      if (bytes_sent == -1) {
+        perror("send");
+      }
+    }
+  }
 }
 
 int main(int argc, char **argv) {
@@ -135,8 +146,8 @@ int main(int argc, char **argv) {
             continue;
           }
 
-          buf[MIN((int)strcspn(buf, "\n"), bytes_received)] = '\0';
-          printf("user-%d: %s\n", i, buf);
+          buf[bytes_received] = '\0';
+          send_message(listenerfd, buf, i, maxfd, &masterfds);
         }
       }
     }
