@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,6 +9,14 @@
 
 #define MAX_MSG_LEN 512
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+void close_all_fds(int maxfds, fd_set *fds) {
+  for (int i = 0; i <= maxfds; i++) {
+    if (FD_ISSET(i, fds)) {
+      close(i);
+    }
+  }
+}
 
 int main(void) {
   struct addrinfo hints;
@@ -52,7 +61,15 @@ int main(void) {
     struct sockaddr_storage clientaddr;
     socklen_t clientaddr_size = sizeof clientaddr;
 
-    select(maxfd + 1, &readfds, NULL, NULL, NULL);
+    if (select(maxfd + 1, &readfds, NULL, NULL, NULL) < 0) {
+      if (errno == EINTR) {
+        continue;
+      } else {
+        close_all_fds(maxfd, &masterfds);
+        freeaddrinfo(servinfo);
+        return EXIT_FAILURE;
+      }
+    }
 
     for (int i = 0; i <= maxfd; i++) {
       if (FD_ISSET(i, &readfds)) {
@@ -63,6 +80,7 @@ int main(void) {
             continue;
           }
 
+          // TODO: Relay user X entered the chat.
           printf("user-%d entered the chat.\n", connectionfd);
 
           FD_SET(connectionfd, &masterfds);
@@ -72,18 +90,15 @@ int main(void) {
         } else {
           char buf[MAX_MSG_LEN];
           int bytes_received = recv(i, buf, MAX_MSG_LEN, 0);
-          if (bytes_received < 0) {
-            /*
-             * we should do something fancy here, like saying failed to
-             * receive msg back to the sender.
-             */
-            continue;
-          }
-          if (bytes_received == 0) {
-            printf("Client disconnected.\n");
+          if (bytes_received <= 0) {
+            if (bytes_received == 0) {
+              // TODO: Relay user X left the chat.
+              printf("user-%d left the chat.\n", i);
+            }
+
             FD_CLR(i, &masterfds);
             close(i);
-            break;
+            continue;
           }
 
           buf[MIN((int)strcspn(buf, "\n"), bytes_received)] = '\0';
@@ -94,6 +109,6 @@ int main(void) {
   }
 
   freeaddrinfo(servinfo);
-  close(socketfd);
+  close_all_fds(maxfd, &masterfds);
   return EXIT_SUCCESS;
 }
