@@ -4,5 +4,6 @@
 #include <sys/types.h>
 
 void close_all_fds(int maxfds, fd_set *fds);
+int get_listener_socket();
 
 #endif

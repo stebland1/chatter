@@ -18,9 +18,10 @@ void close_all_fds(int maxfds, fd_set *fds) {
   }
 }
 
-int main(void) {
+int get_listener_socket() {
   struct addrinfo hints;
   struct addrinfo *servinfo;
+  int yes = 1;
 
   memset(&hints, 0, sizeof hints);
   hints.ai_family = PF_UNSPEC;
@@ -28,34 +29,49 @@ int main(void) {
   hints.ai_flags = AI_PASSIVE;
 
   if (getaddrinfo(NULL, "8081", &hints, &servinfo) != 0) {
-    return EXIT_FAILURE;
+    perror("address");
+    return -1;
   }
 
-  int socketfd =
-      socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
-  if (socketfd == -1) {
+  struct addrinfo *p;
+  for (p = servinfo; p != NULL; p = p->ai_next) {
+    int listenerfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+    if (listenerfd == -1) {
+      continue;
+    }
+
+    setsockopt(listenerfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+
+    if (bind(listenerfd, p->ai_addr, p->ai_addrlen) < 0) {
+      close(listenerfd);
+      continue;
+    }
+
+    if (listen(listenerfd, 10) < 0) {
+      close(listenerfd);
+      continue;
+    }
+
     freeaddrinfo(servinfo);
-    perror("socket");
-    return EXIT_FAILURE;
+    return listenerfd;
   }
 
-  if (bind(socketfd, servinfo->ai_addr, servinfo->ai_addrlen) < 0) {
-    freeaddrinfo(servinfo);
-    perror("bind");
-    return EXIT_FAILURE;
-  }
+  freeaddrinfo(servinfo);
+  return -1;
+}
 
-  if (listen(socketfd, 10) < 0) {
-    freeaddrinfo(servinfo);
-    perror("listen");
+int main(void) {
+  int listenerfd = get_listener_socket();
+  if (listenerfd < 0) {
     return EXIT_FAILURE;
   }
 
   fd_set masterfds, readfds;
-  int maxfd = socketfd;
+  int maxfd = listenerfd;
   FD_ZERO(&masterfds);
   FD_ZERO(&readfds);
-  FD_SET(socketfd, &masterfds);
+  FD_SET(listenerfd, &masterfds);
+
   while (1) {
     readfds = masterfds;
     struct sockaddr_storage clientaddr;
@@ -66,15 +82,14 @@ int main(void) {
         continue;
       } else {
         close_all_fds(maxfd, &masterfds);
-        freeaddrinfo(servinfo);
         return EXIT_FAILURE;
       }
     }
 
     for (int i = 0; i <= maxfd; i++) {
       if (FD_ISSET(i, &readfds)) {
-        if (i == socketfd) {
-          int connectionfd = accept(socketfd, (struct sockaddr *)&clientaddr,
+        if (i == listenerfd) {
+          int connectionfd = accept(listenerfd, (struct sockaddr *)&clientaddr,
                                     &clientaddr_size);
           if (connectionfd < 0) {
             continue;
@@ -108,7 +123,6 @@ int main(void) {
     }
   }
 
-  freeaddrinfo(servinfo);
   close_all_fds(maxfd, &masterfds);
   return EXIT_SUCCESS;
 }
