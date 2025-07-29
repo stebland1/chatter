@@ -18,7 +18,7 @@ void close_all_fds(int maxfds, fd_set *fds) {
   }
 }
 
-int get_listener_socket() {
+int get_listener_socket(const char *hostname, const char *port) {
   struct addrinfo hints;
   struct addrinfo *servinfo;
   int yes = 1;
@@ -26,10 +26,13 @@ int get_listener_socket() {
   memset(&hints, 0, sizeof hints);
   hints.ai_family = PF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_PASSIVE;
+  if (!hostname) {
+    hints.ai_flags = AI_PASSIVE;
+  }
 
-  if (getaddrinfo(NULL, "8081", &hints, &servinfo) != 0) {
-    perror("address");
+  int rv = getaddrinfo(hostname, port, &hints, &servinfo);
+  if (rv != 0) {
+    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
     return -1;
   }
 
@@ -60,9 +63,24 @@ int get_listener_socket() {
   return -1;
 }
 
-int main(void) {
-  int listenerfd = get_listener_socket();
+int main(int argc, char **argv) {
+  const char *port, *hostname = NULL;
+  switch (argc) {
+  case 2:
+    port = argv[1];
+    break;
+  case 3:
+    hostname = argv[1];
+    port = argv[2];
+    break;
+  default:
+    fprintf(stderr, "Usage: %s [hostname] port\n", argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  int listenerfd = get_listener_socket(hostname, port);
   if (listenerfd < 0) {
+    fprintf(stderr, "Error initializing listener: %d\n", listenerfd);
     return EXIT_FAILURE;
   }
 
@@ -82,6 +100,7 @@ int main(void) {
         continue;
       } else {
         close_all_fds(maxfd, &masterfds);
+        fprintf(stderr, "Error selecting ready file desriptors\n");
         return EXIT_FAILURE;
       }
     }
@@ -111,8 +130,8 @@ int main(void) {
               printf("user-%d left the chat.\n", i);
             }
 
-            FD_CLR(i, &masterfds);
             close(i);
+            FD_CLR(i, &masterfds);
             continue;
           }
 
