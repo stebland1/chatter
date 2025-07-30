@@ -123,7 +123,10 @@ void send_message(int senderfd, char *msg, ServerContext *ctx) {
     if (FD_ISSET(i, &ctx->masterfds) && i != senderfd && i != ctx->listenerfd) {
       int bytes_sent = send(i, msg, strlen(msg), 0);
       if (bytes_sent == -1) {
+        // TODO: Try to recover on specific errorno's
         perror("send");
+        close(i);
+        FD_CLR(i, &ctx->masterfds);
       }
     }
   }
