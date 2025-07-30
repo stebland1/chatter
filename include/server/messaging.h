@@ -1,7 +1,7 @@
 #ifndef MESSAGING_H
 #define MESSAGING_H
 
-#include "server.h"
+#include "server/server.h"
 
 #define MAX_MSG_LEN 512
 

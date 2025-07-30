@@ -1,7 +1,6 @@
-#include "server.h"
-#include "connection.h"
-#include "messaging.h"
-#include "socket.h"
+#include "server/connection.h"
+#include "server/messaging.h"
+#include "server/socket.h"
 #include <errno.h>
 #include <netdb.h>
 #include <stdio.h>

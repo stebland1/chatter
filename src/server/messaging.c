@@ -1,7 +1,7 @@
-#include "messaging.h"
-#include "connection.h"
-#include "server.h"
-#include "utils.h"
+#include "server/messaging.h"
+#include "server/connection.h"
+#include "server/server.h"
+#include "server/utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

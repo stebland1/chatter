@@ -1,7 +1,7 @@
 #ifndef CONNECTION_H
 #define CONNECTION_H
 
-#include "server.h"
+#include "server/server.h"
 
 void close_connection(int fd, ServerContext *ctx);
 void handle_new_connection(ServerContext *ctx, struct sockaddr *clientaddr,
