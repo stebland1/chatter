@@ -16,6 +16,17 @@ void close_all_fds(int maxfds, fd_set *fds) {
   }
 }
 
+int get_num_digits(int num) {
+  int count = 0;
+
+  do {
+    num /= 10;
+    count++;
+  } while (num != 0);
+
+  return count;
+}
+
 int get_listener_socket(const char *hostname, const char *port) {
   struct addrinfo hints;
   struct addrinfo *servinfo;
@@ -142,12 +153,22 @@ int main(int argc, char **argv) {
             }
 
             close(i);
+            // TODO: Every time we remove a fd, check to see if it's the
+            // largest.
             FD_CLR(i, &masterfds);
             continue;
           }
 
           buf[bytes_received] = '\0';
-          send_message(listenerfd, buf, i, maxfd, &masterfds);
+          char *msg =
+              malloc(strlen(buf) + 1 /* null */ + 7 + get_num_digits(i));
+          if (!msg) {
+            fprintf(stderr, "Failed to allocate memory for message\n");
+            return EXIT_SUCCESS;
+          }
+          sprintf(msg, "user-%d: %s", i, buf);
+          send_message(listenerfd, msg, i, maxfd, &masterfds);
+          free(msg);
         }
       }
     }
