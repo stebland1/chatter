@@ -2,6 +2,7 @@
 #include "server/connection.h"
 #include "server/server.h"
 #include "server/utils.h"
+#include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

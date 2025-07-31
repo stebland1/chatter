@@ -1,9 +1,7 @@
-#ifndef MESSAGING_H
-#define MESSAGING_H
+#ifndef SERVER_MESSAGING_H
+#define SERVER_MESSAGING_H
 
 #include "server/server.h"
-
-#define MAX_MSG_LEN 512
 
 int handle_client_message(int senderfd, ServerContext *ctx);
 void send_message(int senderfd, char *msg, ServerContext *ctx);

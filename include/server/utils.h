@@ -1,5 +1,5 @@
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef SERVER_UTILS_H
+#define SERVER_UTILS_H
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
