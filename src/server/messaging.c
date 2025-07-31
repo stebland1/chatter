@@ -38,7 +38,7 @@ void send_message(int senderfd, char *msg, ServerContext *ctx) {
   // So we could end up with bytes still to send.
   for (int i = 0; i <= ctx->maxfd; i++) {
     if (FD_ISSET(i, &ctx->masterfds) && i != senderfd && i != ctx->listenerfd) {
-      int bytes_sent = send(i, msg, strlen(msg), 0);
+      int bytes_sent = sendall(i, msg, strlen(msg));
       if (bytes_sent == -1) {
         // TODO: Try to recover on specific errorno's
         close_connection(i, ctx);

@@ -1,4 +1,5 @@
 #include "utils.h"
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -9,8 +10,7 @@ int handle_send_message(int serverfd, char *msgbuf) {
     return -1;
   }
 
-  if (send(serverfd, msgbuf, strlen(msgbuf), 0) == -1) {
-    perror("send");
+  if (sendall(serverfd, msgbuf, strlen(msgbuf)) == -1) {
     return -1;
   }
 
@@ -30,6 +30,5 @@ int handle_receive_message(int serverfd, char *msgbuf) {
 
   msgbuf[bytes_received] = '\0';
   printf("%s", msgbuf);
-
   return 0;
 }
