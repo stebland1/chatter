@@ -11,13 +11,14 @@ int handle_client_message(int senderfd, ServerContext *ctx) {
   char buf[MAX_MSG_LEN];
   int bytes_received = recv(senderfd, buf, MAX_MSG_LEN, 0);
   if (bytes_received <= 0) {
+    close_connection(senderfd, ctx);
     if (bytes_received == 0) {
       // TODO: Relay user X left the chat.
       printf("user-%d left the chat.\n", senderfd);
+      return 0;
     }
 
     perror("recv");
-    close_connection(senderfd, ctx);
     return -1;
   }
 
