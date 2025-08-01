@@ -43,8 +43,7 @@ int client_connect(const char *hostname, const char *port) {
 int client_run(int serverfd) {
   int stdinfd = fileno(stdin);
   fd_set readfds;
-  char inputbuf[MAX_MSG_LEN];
-  int inputbuf_len = 0;
+  InputBuffer ib = {0};
 
   while (1) {
     FD_ZERO(&readfds);
@@ -62,13 +61,12 @@ int client_run(int serverfd) {
       return -1;
     }
 
-    if (FD_ISSET(stdinfd, &readfds) &&
-        handle_user_input(serverfd, inputbuf, &inputbuf_len) == -1) {
+    if (FD_ISSET(stdinfd, &readfds) && handle_user_input(serverfd, &ib) == -1) {
       return -1;
     }
 
     if (FD_ISSET(serverfd, &readfds) &&
-        handle_receive_message(serverfd, inputbuf, inputbuf_len) == -1) {
+        handle_receive_message(serverfd, &ib) == -1) {
       return -1;
     }
   }

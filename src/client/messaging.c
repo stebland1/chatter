@@ -5,7 +5,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-int handle_receive_message(int serverfd, char *inputbuf, char inputbuf_len) {
+int handle_receive_message(int serverfd, InputBuffer *ib) {
   char msgbuf[MAX_MSG_LEN];
   int bytes_received = recv(serverfd, msgbuf, MAX_MSG_LEN, 0);
   if (bytes_received <= 0) {
@@ -20,8 +20,8 @@ int handle_receive_message(int serverfd, char *inputbuf, char inputbuf_len) {
   msgbuf[bytes_received] = '\0';
   terminal_clear_line();
   write(STDOUT_FILENO, msgbuf, bytes_received);
-  if (inputbuf_len > 0) {
-    write(STDOUT_FILENO, inputbuf, inputbuf_len);
+  if (ib->len > 0) {
+    write(STDOUT_FILENO, ib->buf, ib->len);
   }
   return 0;
 }

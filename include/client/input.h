@@ -4,8 +4,13 @@
 #include "utils.h"
 #include <stddef.h>
 
-int handle_user_input(int serverfd, char *inputbuf, int *inputbuf_len);
+typedef struct {
+  char buf[MAX_MSG_LEN];
+  int len;
+} InputBuffer;
+
+int handle_user_input(int serverfd, InputBuffer *ib);
 void terminal_clear_line();
-void rewrite_input_buffer(char *inputbuf, int *inputbuf_len);
+void rewrite_input_buffer(InputBuffer *ib);
 
 #endif
