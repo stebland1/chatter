@@ -1,4 +1,5 @@
 #include "client/client.h"
+#include "client/raw.h"
 #include <errno.h>
 #include <netdb.h>
 #include <stdio.h>
@@ -18,6 +19,7 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
+  enable_raw_mode();
   int status = client_run(serverfd);
 
   client_shutdown(serverfd);

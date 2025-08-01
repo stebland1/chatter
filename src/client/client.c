@@ -1,3 +1,4 @@
+#include "client/input.h"
 #include "client/messaging.h"
 #include "utils.h"
 #include <errno.h>
@@ -42,7 +43,8 @@ int client_connect(const char *hostname, const char *port) {
 int client_run(int serverfd) {
   int stdinfd = fileno(stdin);
   fd_set readfds;
-  char buf[MAX_MSG_LEN];
+  char inputbuf[MAX_MSG_LEN];
+  int inputbuf_len = 0;
 
   while (1) {
     FD_ZERO(&readfds);
@@ -61,12 +63,12 @@ int client_run(int serverfd) {
     }
 
     if (FD_ISSET(stdinfd, &readfds) &&
-        handle_send_message(serverfd, buf) == -1) {
+        handle_user_input(serverfd, inputbuf, &inputbuf_len) == -1) {
       return -1;
     }
 
     if (FD_ISSET(serverfd, &readfds) &&
-        handle_receive_message(serverfd, buf) == -1) {
+        handle_receive_message(serverfd, inputbuf, inputbuf_len) == -1) {
       return -1;
     }
   }
