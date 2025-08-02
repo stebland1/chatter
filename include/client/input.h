@@ -11,6 +11,7 @@ typedef struct {
 
 int handle_user_input(int serverfd, InputBuffer *ib);
 void terminal_clear_line();
-void rewrite_input_buffer(InputBuffer *ib);
+void terminal_write_ib(InputBuffer *ib);
+int ib_append(InputBuffer *ib, char c);
 
 #endif

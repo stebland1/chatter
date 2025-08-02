@@ -5,9 +5,18 @@
 
 void terminal_clear_line() { write(STDOUT_FILENO, "\r\x1b[K", 4); }
 
-void rewrite_input_buffer(InputBuffer *ib) {
+void terminal_write_ib(InputBuffer *ib) {
   terminal_clear_line();
   write(STDIN_FILENO, ib->buf, ib->len);
+}
+
+int ib_append(InputBuffer *ib, char c) {
+  if (ib->len >= MAX_MSG_LEN - 1 /* newline */ - 1 /* null */) {
+    return -1;
+  }
+
+  ib->buf[ib->len++] = c;
+  return 0;
 }
 
 int handle_user_input(int serverfd, InputBuffer *ib) {
@@ -19,11 +28,12 @@ int handle_user_input(int serverfd, InputBuffer *ib) {
 
   switch (c) {
   case 127:
-    ib->len--;
-    rewrite_input_buffer(ib);
+    if (ib->len > 0) {
+      ib->len--;
+      terminal_write_ib(ib);
+    }
     break;
   case '\n':
-    // TODO: appending to the input buffer should be protected by MAX_MSG_LEN
     ib->buf[ib->len++] = c;
     if (sendall(serverfd, ib->buf, ib->len) == -1) {
       return -1;
@@ -34,8 +44,9 @@ int handle_user_input(int serverfd, InputBuffer *ib) {
     ib->len = 0;
     break;
   default:
-    ib->buf[ib->len++] = c;
-    rewrite_input_buffer(ib);
+    if (ib_append(ib, c) == 0) {
+      terminal_write_ib(ib);
+    }
     break;
   }
 
