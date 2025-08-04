@@ -27,6 +27,7 @@ void server_run(ServerContext *ctx) {
     struct sockaddr_storage clientaddr;
     socklen_t clientaddr_size = sizeof clientaddr;
 
+    // TODO: rewrite to use poll, which is more performant.
     if (select(ctx->maxfd + 1, &ctx->readfds, NULL, NULL, NULL) < 0) {
       if (errno == EINTR) {
         continue;

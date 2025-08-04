@@ -52,6 +52,7 @@ int client_run(int serverfd) {
 
     int maxfd = stdinfd > serverfd ? stdinfd : serverfd;
 
+    // TODO: rewrite to use poll, which is more performant.
     if (select(maxfd + 1, &readfds, NULL, NULL, NULL) < 0) {
       if (errno == EINTR) {
         continue;
