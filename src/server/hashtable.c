@@ -39,7 +39,6 @@ static int ht_resize(HashTable *ht) {
   size_t new_capacity = ht->capacity > 0 ? ht->capacity * 2 : 8;
   HashTableEntry **new_entries = calloc(new_capacity, sizeof(HashTableEntry *));
   if (!new_entries) {
-    ht_destroy(ht);
     return -1;
   }
 
