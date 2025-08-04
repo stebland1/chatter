@@ -76,29 +76,32 @@ HashTable *ht_create() {
   return ht;
 }
 
-static HashTableEntry *ht_create_entry(const char *key, const char *value,
+static HashTableEntry *ht_create_entry(const char *key,
+                                       const HashTableValue value,
                                        const uint32_t hash) {
   HashTableEntry *entry = malloc(sizeof(HashTableEntry));
+  if (!entry) {
+    return NULL;
+  }
   entry->key = strdup(key);
   if (!entry->key) {
+    free(entry);
     return NULL;
   }
 
-  // TODO: add struct storage.
-  // I think to do this I'd need to use memcpy to copy the raw bytes.
-  // I'd need to accept value as a void ptr.
-  // and accept the size of the value being stored as part of the API.
-  entry->value = strdup(value);
+  entry->value = malloc(value.size);
   if (!entry->value) {
     free(entry->key);
+    free(entry);
     return NULL;
   }
-
+  memcpy(entry->value, value.value, value.size);
   entry->hash = hash;
+  entry->next = NULL;
   return entry;
 }
 
-int ht_set(HashTable *ht, const char *key, const char *value) {
+int ht_set(HashTable *ht, const char *key, const HashTableValue value) {
   if ((ht->capacity == 0 ||
        (double)(ht->count + 1) / (double)ht->capacity > LOAD_FACTOR) &&
       ht_resize(ht) == -1) {
@@ -122,8 +125,12 @@ int ht_set(HashTable *ht, const char *key, const char *value) {
   while (cur) {
     if (strcmp(cur->key, key) == 0) {
       free(cur->value);
-      cur->value = strdup(value);
-      return cur->value ? 0 : -1;
+      cur->value = malloc(value.size);
+      if (!cur->value) {
+        return -1;
+      }
+      memcpy(cur->value, value.value, value.size);
+      return 0;
     }
 
     if (!cur->next) {
@@ -141,14 +148,10 @@ int ht_set(HashTable *ht, const char *key, const char *value) {
   return 0;
 }
 
-char *ht_get(HashTable *ht, const char *key) {
+void *ht_get(HashTable *ht, const char *key) {
   uint32_t hash = hash_string(key, strlen(key));
   int index = hash % ht->capacity;
   HashTableEntry *cur = ht->entries[index];
-
-  if (!cur) {
-    return NULL;
-  }
 
   while (cur) {
     if (strcmp(cur->key, key) == 0) {
@@ -176,7 +179,9 @@ void ht_print(HashTable *ht) {
         if (!first) {
           printf(" -> ");
         }
-        printf("[%s, %s]", cur->key, cur->value);
+        // TODO: This is now broken due to storage of opaque values.
+        // Fix this to include a callback to allow the user to print the value.
+        /* printf("[%s, %s]", cur->key, cur->value); */
         cur = cur->next;
         first = 0;
       }

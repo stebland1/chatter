@@ -10,7 +10,7 @@ typedef struct HashTableEntry HashTableEntry;
 
 typedef struct HashTableEntry {
   char *key;
-  char *value;
+  void *value;
   uint32_t hash;
   HashTableEntry *next;
 } HashTableEntry;
@@ -21,9 +21,14 @@ typedef struct {
   size_t count;
 } HashTable;
 
+typedef struct {
+  void *value;
+  size_t size;
+} HashTableValue;
+
 HashTable *ht_create();
-int ht_set(HashTable *ht, const char *key, const char *value);
-char *ht_get(HashTable *ht, const char *key);
+int ht_set(HashTable *ht, const char *key, const HashTableValue value);
+void *ht_get(HashTable *ht, const char *key);
 void ht_destroy(HashTable *ht);
 void ht_print(HashTable *ht);
 
