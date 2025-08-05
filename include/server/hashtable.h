@@ -16,20 +16,29 @@ typedef struct HashTableEntry {
 } HashTableEntry;
 
 typedef struct {
-  HashTableEntry **entries; // points to head of linked list.
-  size_t capacity;
-  size_t count;
-} HashTable;
-
-typedef struct {
   void *value;
   size_t size;
 } HashTableValue;
 
-HashTable *ht_create();
-int ht_set(HashTable *ht, const char *key, const HashTableValue value);
-void *ht_get(HashTable *ht, const char *key);
+typedef uint32_t (*HashCallback)(void *item);
+typedef void (*PrintCallback)(HashTableEntry *item);
+
+typedef enum {
+  HT_KEY_STRING,
+  HT_KEY_INT,
+} HashTableKeyType;
+
+typedef struct {
+  HashTableEntry **entries; // points to head of linked list.
+  size_t capacity;
+  size_t count;
+  HashTableKeyType key_type;
+} HashTable;
+
+HashTable *ht_create(HashTableKeyType key_type);
+int ht_set(HashTable *ht, const void *key, const HashTableValue value);
+void *ht_get(HashTable *ht, const void *key);
 void ht_destroy(HashTable *ht);
-void ht_print(HashTable *ht);
+void ht_print(HashTable *ht, PrintCallback print);
 
 #endif
