@@ -32,11 +32,13 @@ int get_listener_socket(const char *hostname, const char *port) {
     setsockopt(listenerfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 
     if (bind(listenerfd, p->ai_addr, p->ai_addrlen) < 0) {
+      perror("bind");
       close(listenerfd);
       continue;
     }
 
     if (listen(listenerfd, 10) < 0) {
+      perror("listen");
       close(listenerfd);
       continue;
     }
