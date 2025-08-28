@@ -9,7 +9,7 @@
 typedef struct HashTableEntry HashTableEntry;
 
 typedef struct HashTableEntry {
-  char *key;
+  void *key;
   void *value;
   uint32_t hash;
   HashTableEntry *next;
