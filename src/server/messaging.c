@@ -35,7 +35,7 @@ int handle_client_message(int senderfd, ServerContext *ctx) {
 }
 
 void send_message(int senderfd, char *msg, ServerContext *ctx) {
-  // TODO: Apparently send buffers messages
+  // TODO: Apparently 'send' buffers messages
   // So we could end up with bytes still to send.
   for (int i = 0; i <= ctx->maxfd; i++) {
     if (FD_ISSET(i, &ctx->masterfds) && i != senderfd && i != ctx->listenerfd) {
