@@ -110,8 +110,7 @@ HashTable *ht_create(HashTableKeyType key_type) {
 }
 
 static HashTableEntry *ht_create_entry(HashTable *ht, const void *key,
-                                       const HashTableValue value,
-                                       const uint32_t hash) {
+                                       const void *value, const uint32_t hash) {
   HashTableEntry *entry = malloc(sizeof(HashTableEntry));
   if (!entry) {
     return NULL;
@@ -135,19 +134,13 @@ static HashTableEntry *ht_create_entry(HashTable *ht, const void *key,
     break;
   }
 
-  entry->value = malloc(value.size);
-  if (!entry->value) {
-    free(entry->key);
-    free(entry);
-    return NULL;
-  }
-  memcpy(entry->value, value.value, value.size);
+  entry->value = (void *)value;
   entry->hash = hash;
   entry->next = NULL;
   return entry;
 }
 
-int ht_set(HashTable *ht, const void *key, const HashTableValue value) {
+int ht_set(HashTable *ht, const void *key, const void *value) {
   if ((ht->capacity == 0 ||
        (double)(ht->count + 1) / (double)ht->capacity > LOAD_FACTOR) &&
       ht_resize(ht) == -1) {
@@ -169,12 +162,7 @@ int ht_set(HashTable *ht, const void *key, const HashTableValue value) {
 
   while (cur) {
     if (compare(ht->key_type, cur->key, key)) {
-      free(cur->value);
-      cur->value = malloc(value.size);
-      if (!cur->value) {
-        return -1;
-      }
-      memcpy(cur->value, value.value, value.size);
+      cur->value = (void *)value;
       return 0;
     }
 

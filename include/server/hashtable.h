@@ -15,11 +15,6 @@ typedef struct HashTableEntry {
   HashTableEntry *next;
 } HashTableEntry;
 
-typedef struct {
-  void *value;
-  size_t size;
-} HashTableValue;
-
 typedef uint32_t (*HashCallback)(void *item);
 typedef void (*PrintCallback)(HashTableEntry *item);
 
@@ -36,7 +31,7 @@ typedef struct {
 } HashTable;
 
 HashTable *ht_create(HashTableKeyType key_type);
-int ht_set(HashTable *ht, const void *key, const HashTableValue value);
+int ht_set(HashTable *ht, const void *key, const void *value);
 void *ht_get(HashTable *ht, const void *key);
 void ht_destroy(HashTable *ht);
 void ht_print(HashTable *ht, PrintCallback print);
