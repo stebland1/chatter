@@ -20,11 +20,12 @@ void close_connection(int fd, ServerContext *ctx) {
   }
 }
 
-void handle_new_connection(ServerContext *ctx, struct sockaddr *clientaddr,
-                           socklen_t *clientaddr_size) {
+int handle_new_connection(ServerContext *ctx, struct sockaddr *clientaddr,
+                          socklen_t *clientaddr_size) {
   int connectionfd = accept(ctx->listenerfd, clientaddr, clientaddr_size);
   if (connectionfd < 0) {
-    return;
+    fprintf(stderr, "Failed to accept connection\n");
+    return -1;
   }
 
   // TODO: Relay user X entered the chat.
@@ -34,6 +35,8 @@ void handle_new_connection(ServerContext *ctx, struct sockaddr *clientaddr,
   if (connectionfd > ctx->maxfd) {
     ctx->maxfd = connectionfd;
   }
+
+  return 0;
 }
 
 void close_all_fds(ServerContext *ctx) {

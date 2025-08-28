@@ -40,8 +40,10 @@ void server_run(ServerContext *ctx) {
     for (int i = 0; i <= ctx->maxfd; i++) {
       if (FD_ISSET(i, &ctx->readfds)) {
         if (i == ctx->listenerfd) {
-          handle_new_connection(ctx, (struct sockaddr *)&clientaddr,
-                                &clientaddr_size);
+          if (handle_new_connection(ctx, (struct sockaddr *)&clientaddr,
+                                    &clientaddr_size) == -1) {
+            fprintf(stderr, "Failed to connect\n");
+          }
         } else if (handle_client_message(i, ctx) < 0) {
           fprintf(stderr, "Failed to handle message from fd %d\n", i);
           return;
