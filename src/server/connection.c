@@ -1,10 +1,23 @@
+#include "server/client.h"
+#include "server/hashtable.h"
 #include "server/server.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
+void handle_delete_client(const void *client) {
+  return client_destroy((Client *)client);
+}
+
+/*
+ * Performs some clean up after a client disconnects. Either by error or by
+ * client request.
+ */
 void close_connection(int fd, ServerContext *ctx) {
   close(fd);
   FD_CLR(fd, &ctx->masterfds);
+
+  ht_delete(ctx->connected_clients, &fd, handle_delete_client);
 
   /*
    * Every time we close a connection, we should recalculate the maximum fd.
@@ -30,6 +43,17 @@ int handle_new_connection(ServerContext *ctx, struct sockaddr *clientaddr,
 
   // TODO: Relay user X entered the chat.
   printf("user-%d entered the chat.\n", connectionfd);
+
+  Client *client = client_create(connectionfd);
+  if (!client) {
+    return -1;
+  }
+
+  if (ht_set(ctx->connected_clients, &connectionfd, client) == -1) {
+    fprintf(stderr, "Failed to set client in hashtable: %d\n", connectionfd);
+    free(client);
+    return -1;
+  }
 
   FD_SET(connectionfd, &ctx->masterfds);
   if (connectionfd > ctx->maxfd) {
