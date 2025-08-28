@@ -13,15 +13,15 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
+  enable_raw_mode();
+
   int serverfd;
   if ((serverfd = client_connect(argv[1], argv[2])) < 0) {
     fprintf(stderr, "Failed to connect to server\n");
     return EXIT_FAILURE;
   }
 
-  enable_raw_mode();
   int status = client_run(serverfd);
-
   client_shutdown(serverfd);
   return status == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
