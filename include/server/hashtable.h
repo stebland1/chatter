@@ -30,10 +30,13 @@ typedef struct {
   HashTableKeyType key_type;
 } HashTable;
 
+typedef void (*DeleteCallback)(const void *value);
+
 HashTable *ht_create(HashTableKeyType key_type);
 int ht_set(HashTable *ht, const void *key, const void *value);
 void *ht_get(HashTable *ht, const void *key);
 void ht_destroy(HashTable *ht);
 void ht_print(HashTable *ht, PrintCallback print);
+int ht_delete(HashTable *ht, const void *key, DeleteCallback on_delete);
 
 #endif

@@ -197,6 +197,28 @@ void *ht_get(HashTable *ht, const void *key) {
   return NULL;
 }
 
+int ht_delete(HashTable *ht, const void *key, DeleteCallback on_delete) {
+  uint32_t hash = make_hash(ht->key_type, key);
+  size_t index = hash % ht->capacity;
+
+  HashTableEntry **p = &ht->entries[index];
+  while (*p && compare(ht->key_type, (*p)->key, key) == 0) {
+    p = &(*p)->next;
+  }
+
+  HashTableEntry *target = *p;
+  if (!target) {
+    return 0;
+  }
+
+  free(target->key);
+  on_delete(target->value);
+  *p = (*p)->next;
+  free(target);
+  ht->count--;
+  return 1;
+}
+
 void ht_print(HashTable *ht, PrintCallback print) {
   printf("============================\n");
   printf("Num items: %zu\n", ht->count);
