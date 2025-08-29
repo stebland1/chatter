@@ -13,11 +13,18 @@
 int handle_client_message(int senderfd, ServerContext *ctx) {
   char msgbuf[MAX_MSG_LEN];
   int bytes_received = recv(senderfd, msgbuf, MAX_MSG_LEN, 0);
+
+  Client *client = ht_get(ctx->connected_clients, &senderfd);
+  char usernamebuf[MAX_NICKNAME_LEN];
+  client_get_username(usernamebuf, MAX_NICKNAME_LEN, client);
+
   if (bytes_received <= 0) {
     close_connection(senderfd, ctx);
     if (bytes_received == 0) {
-      // TODO: Relay user X left the chat.
-      printf("user-%d left the chat.\n", senderfd);
+      char broadcast_msg_buf[MAX_MSG_LEN];
+      snprintf(broadcast_msg_buf, MAX_MSG_LEN, "%s has left the chat.\n",
+               usernamebuf);
+      send_message(client->fd, broadcast_msg_buf, ctx);
       return 0;
     }
 
@@ -26,11 +33,6 @@ int handle_client_message(int senderfd, ServerContext *ctx) {
   }
 
   msgbuf[bytes_received] = '\0';
-
-  Client *client = ht_get(ctx->connected_clients, &senderfd);
-  char usernamebuf[MAX_NICKNAME_LEN];
-  client_get_username(usernamebuf, MAX_NICKNAME_LEN, client);
-
   if (handle_command(ctx, msgbuf, client, usernamebuf) != CMD_NOT_A_COMMAND) {
     return 0; // don't broadcast commands.
   }
