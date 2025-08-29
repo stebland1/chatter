@@ -1,15 +1,18 @@
 #include "server/messaging.h"
+#include "server/client.h"
+#include "server/commands.h"
 #include "server/connection.h"
+#include "server/hashtable.h"
 #include "server/server.h"
-#include "server/utils.h"
 #include "utils.h"
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 int handle_client_message(int senderfd, ServerContext *ctx) {
-  char buf[MAX_MSG_LEN];
-  int bytes_received = recv(senderfd, buf, MAX_MSG_LEN, 0);
+  char msgbuf[MAX_MSG_LEN];
+  int bytes_received = recv(senderfd, msgbuf, MAX_MSG_LEN, 0);
   if (bytes_received <= 0) {
     close_connection(senderfd, ctx);
     if (bytes_received == 0) {
@@ -22,13 +25,25 @@ int handle_client_message(int senderfd, ServerContext *ctx) {
     return -1;
   }
 
-  buf[bytes_received] = '\0';
-  char *msg = malloc(strlen(buf) + 1 /* null */ + 7 + get_num_digits(senderfd));
+  msgbuf[bytes_received] = '\0';
+
+  Client *client = ht_get(ctx->connected_clients, &senderfd);
+  char usernamebuf[MAX_NICKNAME_LEN];
+  client_get_username(usernamebuf, MAX_NICKNAME_LEN, client);
+
+  if (handle_command(ctx, msgbuf, client, usernamebuf) != CMD_NOT_A_COMMAND) {
+    return 0; // don't broadcast commands.
+  }
+
+  size_t delimiter_len = 2;
+  char *msg = malloc(strlen(usernamebuf) + delimiter_len + strlen(msgbuf) +
+                     /* null */ 1);
   if (!msg) {
     fprintf(stderr, "Failed to allocate memory for message\n");
     return -1;
   }
-  sprintf(msg, "user-%d: %s", senderfd, buf);
+
+  sprintf(msg, "%s: %s", usernamebuf, msgbuf);
   send_message(senderfd, msg, ctx);
   free(msg);
   return 0;

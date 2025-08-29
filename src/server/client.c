@@ -1,6 +1,7 @@
 #include "server/client.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 Client *client_create(int fd) {
   Client *client = malloc(sizeof(Client));
@@ -15,3 +16,11 @@ Client *client_create(int fd) {
 }
 
 void client_destroy(Client *client) { free(client); }
+
+size_t client_get_username(char *buffer, size_t buflen, Client *client) {
+  if (client->nickname[0]) {
+    return strlcpy(buffer, client->nickname, buflen);
+  } else {
+    return snprintf(buffer, buflen, "user-%d", client->fd);
+  }
+}
