@@ -1,6 +1,8 @@
 #include "server/client.h"
 #include "server/hashtable.h"
+#include "server/messaging.h"
 #include "server/server.h"
+#include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -41,9 +43,6 @@ int handle_new_connection(ServerContext *ctx, struct sockaddr *clientaddr,
     return -1;
   }
 
-  // TODO: Relay user X entered the chat.
-  printf("user-%d entered the chat.\n", connectionfd);
-
   Client *client = client_create(connectionfd);
   if (!client) {
     return -1;
@@ -60,6 +59,12 @@ int handle_new_connection(ServerContext *ctx, struct sockaddr *clientaddr,
     ctx->maxfd = connectionfd;
   }
 
+  char broadcast_msg_buf[MAX_MSG_LEN];
+  char usernamebuf[MAX_NICKNAME_LEN];
+  client_get_username(usernamebuf, MAX_NICKNAME_LEN, client);
+  snprintf(broadcast_msg_buf, MAX_MSG_LEN, "%s entered the chat.\n",
+           usernamebuf);
+  send_message(client->fd, broadcast_msg_buf, ctx);
   return 0;
 }
 
