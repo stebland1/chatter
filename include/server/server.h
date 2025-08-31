@@ -1,6 +1,7 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include "poll.h"
 #include "server/client.h"
 #include "server/hashtable.h"
 #include <stddef.h>
@@ -8,11 +9,9 @@
 #include <sys/types.h>
 
 typedef struct {
-  fd_set masterfds;
-  fd_set readfds;
-  int maxfd;
   int listenerfd;
   HashTable *connected_clients;
+  Poll *poll;
 } ServerContext;
 
 typedef struct {

@@ -1,5 +1,7 @@
 #include "server/hashtable.h"
 #include "server/server.h"
+#include <poll.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -20,9 +22,8 @@ int main(int argc, char **argv) {
 
   HashTable *cc = ht_create(HT_KEY_INT);
   ServerContext ctx = {
-      .masterfds = {0},
-      .readfds = {0},
       .connected_clients = cc,
+      .poll = poll_create(),
   };
 
   if (server_init(&ctx, hostname, port) < 0) {
@@ -31,7 +32,6 @@ int main(int argc, char **argv) {
   }
 
   server_run(&ctx);
-
   server_shutdown(&ctx);
   return EXIT_SUCCESS;
 }

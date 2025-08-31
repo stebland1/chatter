@@ -3,7 +3,9 @@
 #include "server/socket.h"
 #include <errno.h>
 #include <netdb.h>
+#include <stddef.h>
 #include <stdio.h>
+#include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -14,32 +16,30 @@ int server_init(ServerContext *ctx, const char *hostname, const char *port) {
     return -1;
   }
 
-  FD_ZERO(&ctx->masterfds);
-  FD_ZERO(&ctx->readfds);
-  FD_SET(ctx->listenerfd, &ctx->masterfds);
-  ctx->maxfd = ctx->listenerfd;
+  if (poll_insert_fd(ctx->poll, ctx->listenerfd) < 0) {
+    return -1;
+  }
+
   return 0;
 }
 
 void server_run(ServerContext *ctx) {
   while (1) {
-    ctx->readfds = ctx->masterfds;
     struct sockaddr_storage clientaddr;
     socklen_t clientaddr_size = sizeof clientaddr;
 
-    // TODO: rewrite to use poll, which is more performant.
-    if (select(ctx->maxfd + 1, &ctx->readfds, NULL, NULL, NULL) < 0) {
+    if (poll(ctx->poll->pollfds, ctx->poll->count, -1) < 0) {
       if (errno == EINTR) {
         continue;
       }
 
-      perror("select");
+      perror("poll");
       break;
     }
 
-    for (int i = 0; i <= ctx->maxfd; i++) {
-      if (FD_ISSET(i, &ctx->readfds)) {
-        if (i == ctx->listenerfd) {
+    for (int i = 0; i < (int)ctx->poll->count; i++) {
+      if (ctx->poll->pollfds[i].revents & POLLIN) {
+        if (ctx->poll->pollfds[i].fd == ctx->listenerfd) {
           if (handle_new_connection(ctx, (struct sockaddr *)&clientaddr,
                                     &clientaddr_size) == -1) {
             fprintf(stderr, "Failed to connect\n");
@@ -53,4 +53,7 @@ void server_run(ServerContext *ctx) {
   }
 }
 
-void server_shutdown(ServerContext *ctx) { close_all_fds(ctx); }
+void server_shutdown(ServerContext *ctx) {
+  close_all_fds(ctx);
+  poll_destroy(ctx->poll);
+}

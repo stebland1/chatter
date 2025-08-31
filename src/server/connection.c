@@ -15,24 +15,11 @@ void handle_delete_client(const void *client) {
  * Performs some clean up after a client disconnects. Either by error or by
  * client request.
  */
-void close_connection(int fd, ServerContext *ctx) {
+void close_connection(int poll_index, ServerContext *ctx) {
+  int fd = ctx->poll->pollfds[poll_index].fd;
   close(fd);
-  FD_CLR(fd, &ctx->masterfds);
-
+  poll_delete_fd(ctx->poll, poll_index);
   ht_delete(ctx->connected_clients, &fd, handle_delete_client);
-
-  /*
-   * Every time we close a connection, we should recalculate the maximum fd.
-   * Not ideal, but the select API requires it.
-   */
-  if (fd == ctx->maxfd) {
-    ctx->maxfd = ctx->listenerfd;
-    for (int i = 0; i < FD_SETSIZE; i++) {
-      if (FD_ISSET(i, &ctx->masterfds) && i > ctx->maxfd) {
-        ctx->maxfd = i;
-      }
-    }
-  }
 }
 
 int handle_new_connection(ServerContext *ctx, struct sockaddr *clientaddr,
@@ -54,9 +41,8 @@ int handle_new_connection(ServerContext *ctx, struct sockaddr *clientaddr,
     return -1;
   }
 
-  FD_SET(connectionfd, &ctx->masterfds);
-  if (connectionfd > ctx->maxfd) {
-    ctx->maxfd = connectionfd;
+  if (poll_insert_fd(ctx->poll, connectionfd) < 0) {
+    return -1;
   }
 
   char broadcast_msg_buf[MAX_MSG_LEN];
@@ -69,16 +55,7 @@ int handle_new_connection(ServerContext *ctx, struct sockaddr *clientaddr,
 }
 
 void close_all_fds(ServerContext *ctx) {
-  for (int i = 0; i <= ctx->maxfd; i++) {
-    if (FD_ISSET(i, &ctx->masterfds)) {
-      close(i);
-    }
+  for (size_t i = 0; i < ctx->poll->count; i++) {
+    close(ctx->poll->pollfds[i].fd);
   }
-
-  /*
-   * The program will most likely terminate after this fn call
-   *
-   * But just for consistency.
-   */
-  ctx->maxfd = ctx->listenerfd;
 }

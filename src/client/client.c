@@ -3,8 +3,10 @@
 #include "utils.h"
 #include <errno.h>
 #include <netdb.h>
+#include <poll.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -42,33 +44,34 @@ int client_connect(const char *hostname, const char *port) {
 
 int client_run(int serverfd) {
   int stdinfd = fileno(stdin);
-  fd_set readfds;
   InputBuffer ib = {0};
 
+  Poll *pl = poll_create();
+  if (poll_insert_fd(pl, stdinfd) < 0 || poll_insert_fd(pl, serverfd) < 0) {
+    return -1;
+  }
+
   while (1) {
-    FD_ZERO(&readfds);
-    FD_SET(serverfd, &readfds);
-    FD_SET(stdinfd, &readfds);
-
-    int maxfd = stdinfd > serverfd ? stdinfd : serverfd;
-
-    // TODO: rewrite to use poll, which is more performant.
-    if (select(maxfd + 1, &readfds, NULL, NULL, NULL) < 0) {
+    if (poll(pl->pollfds, pl->count, -1) < 0) {
       if (errno == EINTR) {
         continue;
       }
 
-      perror("select");
+      perror("poll");
       return -1;
     }
 
-    if (FD_ISSET(stdinfd, &readfds) && handle_user_input(serverfd, &ib) == -1) {
-      return -1;
-    }
+    for (int i = 0; i < (int)pl->count; i++) {
+      if (pl->pollfds[i].revents & POLLIN) {
+        int fd = pl->pollfds[i].fd;
+        if (fd == stdinfd && handle_user_input(serverfd, &ib) == -1) {
+          return -1;
+        }
 
-    if (FD_ISSET(serverfd, &readfds) &&
-        handle_receive_message(serverfd, &ib) == -1) {
-      return -1;
+        if (fd == serverfd && handle_receive_message(serverfd, &ib) == -1) {
+          return -1;
+        }
+      }
     }
   }
 

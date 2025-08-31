@@ -3,7 +3,7 @@
 
 #include "server/server.h"
 
-void close_connection(int fd, ServerContext *ctx);
+void close_connection(int poll_index, ServerContext *ctx);
 int handle_new_connection(ServerContext *ctx, struct sockaddr *clientaddr,
                           socklen_t *clientaddr_size);
 void close_all_fds(ServerContext *ctx);

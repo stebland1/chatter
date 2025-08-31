@@ -1,4 +1,5 @@
 #include "server/messaging.h"
+#include "poll.h"
 #include "server/client.h"
 #include "server/commands.h"
 #include "server/connection.h"
@@ -10,7 +11,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-int handle_client_message(int senderfd, ServerContext *ctx) {
+int handle_client_message(int poll_index, ServerContext *ctx) {
+  int senderfd = ctx->poll->pollfds[poll_index].fd;
+
   char msgbuf[MAX_MSG_LEN];
   int bytes_received = recv(senderfd, msgbuf, MAX_MSG_LEN, 0);
 
@@ -19,7 +22,7 @@ int handle_client_message(int senderfd, ServerContext *ctx) {
   client_get_username(usernamebuf, MAX_NICKNAME_LEN, client);
 
   if (bytes_received <= 0) {
-    close_connection(senderfd, ctx);
+    close_connection(poll_index, ctx);
     if (bytes_received == 0) {
       char broadcast_msg_buf[MAX_MSG_LEN];
       snprintf(broadcast_msg_buf, MAX_MSG_LEN, "%s has left the chat.\n",
@@ -54,9 +57,10 @@ int handle_client_message(int senderfd, ServerContext *ctx) {
 void send_message(int senderfd, char *msg, ServerContext *ctx) {
   // TODO: Apparently 'send' buffers messages
   // So we could end up with bytes still to send.
-  for (int i = 0; i <= ctx->maxfd; i++) {
-    if (FD_ISSET(i, &ctx->masterfds) && i != senderfd && i != ctx->listenerfd) {
-      int bytes_sent = sendall(i, msg, strlen(msg));
+  for (size_t i = 0; i < ctx->poll->count; i++) {
+    int fd = ctx->poll->pollfds[i].fd;
+    if (fd != senderfd && fd != ctx->listenerfd) {
+      int bytes_sent = sendall(fd, msg, strlen(msg));
       if (bytes_sent == -1) {
         // TODO: Try to recover on specific errorno's
         close_connection(i, ctx);
