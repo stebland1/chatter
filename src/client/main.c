@@ -2,10 +2,21 @@
 #include "client/raw.h"
 #include <errno.h>
 #include <netdb.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
+int serverfd = -1;
+
+void handle_sig_interrupt(int signum) {
+  (void)signum;
+  if (serverfd != -1) {
+    client_shutdown(serverfd);
+  }
+  exit(EXIT_SUCCESS);
+}
 
 int main(int argc, char **argv) {
   if (argc != 3) {
@@ -14,8 +25,8 @@ int main(int argc, char **argv) {
   }
 
   enable_raw_mode();
+  signal(SIGINT, handle_sig_interrupt);
 
-  int serverfd;
   if ((serverfd = client_connect(argv[1], argv[2])) < 0) {
     fprintf(stderr, "Failed to connect to server\n");
     return EXIT_FAILURE;
