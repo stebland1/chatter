@@ -27,7 +27,7 @@ void close_connection(int fd, ServerContext *ctx) {
    */
   if (fd == ctx->maxfd) {
     ctx->maxfd = ctx->listenerfd;
-    for (int i = 0; i < ctx->maxfd; i++) {
+    for (int i = 0; i < FD_SETSIZE; i++) {
       if (FD_ISSET(i, &ctx->masterfds) && i > ctx->maxfd) {
         ctx->maxfd = i;
       }
