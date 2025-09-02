@@ -20,21 +20,34 @@ CommandResult handle_command(ServerContext *ctx, char *msgbuf, Client *client,
   }
 
   p++;
-  if (strncmp(p, "nick ", 5) == 0) {
-    p += 5;
+  if (strncmp(p, "nick", 4) == 0) {
+    p += 4;
     p[strcspn(p, "\n")] = '\0';
+
+    if (!*p) {
+      goto nonick;
+    }
+
+    if (!isspace(*p)) {
+      return CMD_NOT_A_COMMAND;
+    }
 
     while (isspace(*p)) {
       p++;
     }
 
     if (!*p) {
+    nonick: {
+      // TODO: fix bug where
+      char *errmsg = "[system]: You must supply a nickname.\n";
+      sendall(client->fd, errmsg, strlen(errmsg));
+      return CMD_ERROR;
+    }
       char *errmsg = "[system]: You must supply a nickname.\n";
       sendall(client->fd, errmsg, strlen(errmsg));
       return CMD_ERROR;
     }
 
-    // "<prev user name> changed their nickname to <p>"
     // TODO: potentially reduce the size of the broadcast messages.
     // 512 seems too large.
     char broadcast_msg_buf[MAX_MSG_LEN];
