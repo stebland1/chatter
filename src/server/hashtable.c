@@ -197,7 +197,8 @@ void *ht_get(HashTable *ht, const void *key) {
   return NULL;
 }
 
-int ht_delete(HashTable *ht, const void *key, DeleteCallback on_delete) {
+int ht_delete(HashTable *ht, const void *key, DeleteCallback on_delete,
+              void *userdata) {
   uint32_t hash = make_hash(ht->key_type, key);
   size_t index = hash % ht->capacity;
 
@@ -212,7 +213,7 @@ int ht_delete(HashTable *ht, const void *key, DeleteCallback on_delete) {
   }
 
   free(target->key);
-  on_delete(target->value);
+  on_delete(target->value, userdata);
   *p = (*p)->next;
   free(target);
   ht->count--;

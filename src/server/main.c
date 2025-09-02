@@ -20,12 +20,7 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
-  HashTable *cc = ht_create(HT_KEY_INT);
-  ServerContext ctx = {
-      .connected_clients = cc,
-      .poll = poll_create(),
-  };
-
+  ServerContext ctx;
   if (server_init(&ctx, hostname, port) < 0) {
     fprintf(stderr, "Failed to initialize server\n");
     return EXIT_FAILURE;

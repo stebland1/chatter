@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -g -O0 -I./include
-SERVER_SRC = $(wildcard src/server/*.c) src/utils.c src/poll.c
-CLIENT_SRC = $(wildcard src/client/*.c) src/utils.c src/poll.c
+SERVER_SRC = $(wildcard src/server/*.c) src/utils.c
+CLIENT_SRC = $(wildcard src/client/*.c) src/utils.c
 BIN_DIR = build
 OBJ_SERVER_DIR = $(BIN_DIR)/server/obj
 OBJ_CLIENT_DIR = $(BIN_DIR)/client/obj

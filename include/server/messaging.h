@@ -3,7 +3,7 @@
 
 #include "server/server.h"
 
-int handle_client_message(int poll_index, ServerContext *ctx);
+int handle_client_message(int senderfd, ServerContext *ctx);
 void send_message(int senderfd, char *msg, ServerContext *ctx);
 
 #endif

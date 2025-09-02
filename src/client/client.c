@@ -3,12 +3,13 @@
 #include "utils.h"
 #include <errno.h>
 #include <netdb.h>
-#include <poll.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/poll.h>
+#include <sys/event.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 int client_connect(const char *hostname, const char *port) {
@@ -43,34 +44,41 @@ int client_connect(const char *hostname, const char *port) {
 }
 
 int client_run(int serverfd) {
-  int stdinfd = fileno(stdin);
   InputBuffer ib = {0};
+  int stdinfd = fileno(stdin);
 
-  Poll *pl = poll_create();
-  if (poll_insert_fd(pl, stdinfd) < 0 || poll_insert_fd(pl, serverfd) < 0) {
+  struct kevent kev[2];
+  EV_SET(&kev[0], stdinfd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+  EV_SET(&kev[1], serverfd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+  int kq = kqueue();
+  struct timespec ts;
+  ts.tv_nsec = ts.tv_sec = 0;
+
+  if (kevent(kq, kev, 2, NULL, 0, &ts) < 0) {
+    perror("kevent");
     return -1;
   }
 
   while (1) {
-    if (poll(pl->pollfds, pl->count, -1) < 0) {
+    int nev;
+    if ((nev = kevent(kq, NULL, 0, kev, 2, NULL)) < 0) {
       if (errno == EINTR) {
         continue;
       }
 
-      perror("poll");
+      perror("kevent");
       return -1;
     }
 
-    for (int i = 0; i < (int)pl->count; i++) {
-      if (pl->pollfds[i].revents & POLLIN) {
-        int fd = pl->pollfds[i].fd;
-        if (fd == stdinfd && handle_user_input(serverfd, &ib) == -1) {
-          return -1;
-        }
+    for (int i = 0; i < nev; i++) {
+      if (kev[i].ident == (uintptr_t)stdinfd &&
+          handle_user_input(serverfd, &ib) == -1) {
+        return -1;
+      }
 
-        if (fd == serverfd && handle_receive_message(serverfd, &ib) == -1) {
-          return -1;
-        }
+      if (kev[i].ident == (uintptr_t)serverfd &&
+          handle_receive_message(serverfd, &ib) == -1) {
+        return -1;
       }
     }
   }
